@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Revista Digital</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+
+  <style>
+    body{
+      margin:0;
+      background:#0f0f0f;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+
+    #wrap{
+      width: min(1200px, 96vw);
+      height: min(92vh, 860px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position: relative;
+    }
+
+    #book{
+      width: 92vw;
+      height: 92vh;
+      max-width: 1200px;
+      max-height: 860px;
+      filter: drop-shadow(0 18px 40px rgba(0,0,0,.55));
+    }
+
+    .page{
+      background:#111;
+      border-radius: 12px;
+      overflow: hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .page img{
+      width:100%;
+      height:100%;
+      object-fit: contain;
+      display:block;
+      user-select:none;
+      -webkit-user-drag:none;
+      pointer-events:none;
+    }
+
+    .tap-zone{
+      position:absolute;
+      top:0;
+      height:100%;
+      width:18%;
+      z-index:10;
+      cursor:pointer;
+    }
+    #tapPrev{ left:0; }
+    #tapNext{ right:0; }
+  </style>
+</head>
+
+<body>
+  <div id="wrap">
+    <div id="book">
+      <div class="page"><img src="img/01.jpg" alt="Página 1"></div>
+      <div class="page"><img src="img/02.jpg" alt="Página 2"></div>
+      <div class="page"><img src="img/03.jpg" alt="Página 3"></div>
+      <div class="page"><img src="img/04.jpg" alt="Página 4"></div>
+      <div class="page"><img src="img/05.jpg" alt="Página 5"></div>
+      <div class="page"><img src="img/06.jpg" alt="Página 6"></div>
+      <div class="page"><img src="img/07.jpg" alt="Página 7"></div>
+      <div class="page"><img src="img/08.jpg" alt="Página 8"></div>
+      <div class="page"><img src="img/09.jpg" alt="Página 9"></div>
+      <div class="page"><img src="img/10.jpg" alt="Página 10"></div>
+      <div class="page"><img src="img/11.jpg" alt="Página 11"></div>
+      <div class="page"><img src="img/12.jpg" alt="Página 12"></div>
+    </div>
+
+    <!-- Controles -->
+    <div id="tapPrev" class="tap-zone" aria-label="Izquierda"></div>
+    <div id="tapNext" class="tap-zone" aria-label="Derecha"></div>
+  </div>
+
+  <script>
+    window.addEventListener("load", () => {
+      const bookEl = document.getElementById("book");
+
+      const pageFlip = new St.PageFlip(bookEl, {
+        width: 540,
+        height: 960,
+        size: "stretch",
+        minWidth: 320,
+        maxWidth: 1400,
+        minHeight: 568,
+        maxHeight: 2000,
+        showCover: true,
+
+        maxShadowOpacity: 0.7,
+        showPageCorners: true,
+        flippingTime: 900,
+
+        useMouseEvents: true,
+        mobileScrollSupport: false,
+        swipeDistance: 30,
+        clickEventForward: false
+      });
+
+      pageFlip.loadFromHTML(document.querySelectorAll(".page"));
+
+      // ========= AJUSTE CLAVE =========
+      // Hack para que "volver" se vea menos como tarjeta:
+      // hace micro-adelanto y luego vuelve, forzando el curl.
+      const USE_PREV_CURL_HACK = true;
+      let busy = false;
+
+      function flipNext(){
+        if (busy) return;
+        busy = true;
+        pageFlip.flipNext();
+        setTimeout(() => busy = false, 250);
+      }
+
+      function flipPrevBetter(){
+        if (busy) return;
+        // Si estamos en la primera página, no hacemos nada
+        if (pageFlip.getCurrentPageIndex && pageFlip.getCurrentPageIndex() === 0) return;
+
+        if (!USE_PREV_CURL_HACK){
+          busy = true;
+          pageFlip.flipPrev();
+          setTimeout(() => busy = false, 250);
+          return;
+        }
+
+        busy = true;
+
+        // 1) Pequeño "empujón" hacia adelante (si se puede)
+        // 2) Luego volver, para forzar el render del curl
+        try { pageFlip.flipNext(); } catch(e) {}
+
+        setTimeout(() => {
+          try { pageFlip.flipPrev(); } catch(e) {}
+          setTimeout(() => busy = false, 350);
+        }, 60);
+      }
+
+      // Controles invertidos (como lo pediste)
+      // Derecha = volver (con mejor animación)
+      // Izquierda = avanzar
+      document.getElementById("tapNext").addEventListener("click", flipPrevBetter);
+      document.getElementById("tapPrev").addEventListener("click", flipNext);
+
+      // Teclado invertido: → vuelve, ← avanza
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight") flipPrevBetter();
+        if (e.key === "ArrowLeft") flipNext();
+      });
+
+      // Móvil invertido: derecha vuelve, izquierda avanza
+      bookEl.addEventListener("touchend", (e) => {
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+
+        const rect = bookEl.getBoundingClientRect();
+        const x = t.clientX - rect.left;
+        const ratio = x / rect.width;
+
+        if (ratio > 0.66) flipPrevBetter();
+        else if (ratio < 0.34) flipNext();
+      }, { passive: true });
+    });
+  </script>
+</body>
+</html>
