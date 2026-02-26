@@ -8,30 +8,42 @@
   <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
 
   <style>
-    body{
+    html, body {
       margin:0;
+      padding:0;
+      height:100%;
+      overscroll-behavior: none;
+    }
+
+    body{
       background:#0f0f0f;
-      height:100vh;
+
+      /* 🔥 CLAVE PARA CELULAR */
+      height:100dvh;
+
       display:flex;
       align-items:center;
       justify-content:center;
+
       overflow:hidden;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
     }
 
     #wrap{
       width: min(1200px, 96vw);
-      height: min(92vh, 860px);
+
+      /* 🔥 ocupa todo el alto real */
+      height:100dvh;
+
       display:flex;
       align-items:center;
       justify-content:center;
     }
 
     #book{
-      width: 92vw;
-      height: 92vh;
-      max-width: 1200px;
-      max-height: 860px;
+      width: min(92vw, 1200px);
+      height: min(92dvh, 860px);
+
       filter: drop-shadow(0 18px 40px rgba(0,0,0,.55));
     }
 
@@ -53,6 +65,14 @@
       user-select:none;
       -webkit-user-drag:none;
     }
+
+    /* Fallback para navegadores antiguos */
+    @supports not (height: 100dvh) {
+      body { height:100vh; }
+      #wrap { height:100vh; }
+      #book { height:min(92vh, 860px); }
+    }
+
   </style>
 </head>
 
@@ -79,7 +99,6 @@
       const bookEl = document.getElementById("book");
 
       const pageFlip = new St.PageFlip(bookEl, {
-        // base vertical 9:16
         width: 540,
         height: 960,
         size: "stretch",
@@ -91,7 +110,6 @@
 
         showCover: true,
 
-        // efecto hoja + sombras (simple y bonito)
         maxShadowOpacity: 0.65,
         showPageCorners: true,
         flippingTime: 900,
@@ -100,13 +118,11 @@
         mobileScrollSupport: false,
         swipeDistance: 30,
 
-        // click nativo: derecha avanza, izquierda regresa
         clickEventForward: true
       });
 
       pageFlip.loadFromHTML(document.querySelectorAll(".page"));
 
-      // teclado opcional
       window.addEventListener("keydown", (e) => {
         if (e.key === "ArrowRight") pageFlip.flipNext();
         if (e.key === "ArrowLeft") pageFlip.flipPrev();
