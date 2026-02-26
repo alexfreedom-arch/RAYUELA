@@ -16,9 +16,10 @@
     }
 
     body{
-      background:#0f0f0f;
+      /* ✅ Fondo degradado elegante */
+      background: radial-gradient(circle at 50% 35%, #1a1a1a 0%, #0b0b0b 55%, #070707 100%);
 
-      /* 🔥 CLAVE PARA CELULAR */
+      /* ✅ Alto real en móvil (evita salto) */
       height:100dvh;
 
       display:flex;
@@ -27,52 +28,80 @@
 
       overflow:hidden;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: rgba(255,255,255,.9);
     }
 
+    /* ✅ Contenedor centrado siempre */
     #wrap{
       width: min(1200px, 96vw);
-
-      /* 🔥 ocupa todo el alto real */
       height:100dvh;
-
       display:flex;
       align-items:center;
       justify-content:center;
+      position: relative;
+      padding: 10px 0;
+      box-sizing: border-box;
     }
 
+    /* ✅ Libro con más profundidad */
     #book{
       width: min(92vw, 1200px);
       height: min(92dvh, 860px);
-
-      filter: drop-shadow(0 18px 40px rgba(0,0,0,.55));
+      filter:
+        drop-shadow(0 26px 70px rgba(0,0,0,.70))
+        drop-shadow(0 10px 18px rgba(0,0,0,.45));
     }
 
+    /* ✅ Página con margen tipo revista */
     .page{
-      background:#111;
+      background:#f6f2e9; /* papel */
       border-radius: 12px;
       overflow: hidden;
       display:flex;
       align-items:center;
       justify-content:center;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+
+      /* sutil textura/luz interior */
+      box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,.10),
+        inset 0 0 45px rgba(0,0,0,.06);
     }
 
+    /* ✅ Imagen con margen blanco real (como revista impresa) */
     .page img{
-      width:100%;
-      height:100%;
+      width: 92%;
+      height: 92%;
       object-fit: contain;
       display:block;
       user-select:none;
       -webkit-user-drag:none;
+      pointer-events:none;
     }
 
-    /* Fallback para navegadores antiguos */
+    /* ✅ Indicador de página */
+    #pageIndicator{
+      position:absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: .2px;
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* Fallback para navegadores que no soportan dvh */
     @supports not (height: 100dvh) {
       body { height:100vh; }
       #wrap { height:100vh; }
       #book { height:min(92vh, 860px); }
     }
-
   </style>
 </head>
 
@@ -92,13 +121,18 @@
       <div class="page"><img src="img/11.jpg" alt="Página 11"></div>
       <div class="page"><img src="img/12.jpg" alt="Página 12"></div>
     </div>
+
+    <div id="pageIndicator">Página 1 / 12</div>
   </div>
 
   <script>
     window.addEventListener("load", () => {
       const bookEl = document.getElementById("book");
+      const indicatorEl = document.getElementById("pageIndicator");
+      const totalPages = document.querySelectorAll(".page").length;
 
       const pageFlip = new St.PageFlip(bookEl, {
+        // base vertical 9:16
         width: 540,
         height: 960,
         size: "stretch",
@@ -110,6 +144,7 @@
 
         showCover: true,
 
+        // ✅ sombras + hoja
         maxShadowOpacity: 0.65,
         showPageCorners: true,
         flippingTime: 900,
@@ -123,10 +158,28 @@
 
       pageFlip.loadFromHTML(document.querySelectorAll(".page"));
 
+      // ✅ Actualiza indicador de página (siempre)
+      function updateIndicator() {
+        // getCurrentPageIndex suele devolver 0-based
+        const idx = (pageFlip.getCurrentPageIndex ? pageFlip.getCurrentPageIndex() : 0);
+        const current = Math.min(totalPages, Math.max(1, idx + 1));
+        indicatorEl.textContent = `Página ${current} / ${totalPages}`;
+      }
+
+      // intenta enganchar eventos si existen
+      if (pageFlip.on) {
+        pageFlip.on("flip", updateIndicator);
+        pageFlip.on("changeState", updateIndicator);
+      }
+
+      // fallback: refresca cada flip por teclado también
       window.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowRight") pageFlip.flipNext();
-        if (e.key === "ArrowLeft") pageFlip.flipPrev();
+        if (e.key === "ArrowRight") { pageFlip.flipNext(); setTimeout(updateIndicator, 20); }
+        if (e.key === "ArrowLeft")  { pageFlip.flipPrev(); setTimeout(updateIndicator, 20); }
       });
+
+      // inicial
+      updateIndicator();
     });
   </script>
 </body>
